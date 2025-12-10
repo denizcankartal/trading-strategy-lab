@@ -1,0 +1,15 @@
+services:
+  trading-research:
+    build: .
+    container_name: trading-strategy-research
+    command: python main.py
+    volumes:
+      - .:/app
+      - data-cache:/app/.data_cache
+    environment:
+      - PYTHONUNBUFFERED=1
+    stdin_open: true
+    tty: true
+
+volumes:
+  data-cache:

@@ -1,0 +1,45 @@
+# python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+*.egg-info/
+
+# data cache
+.data_cache/
+*.pkl
+
+# ide
+.vscode/
+.idea/
+.claude/
+*.swp
+*.swo
+
+# jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# git
+.git/
+.gitignore
+
+# generated files
+*_example.png
+*.png
+*.jpg
+*.pdf
+example_data.csv
+
+# os
+.DS_Store
+Thumbs.db
+
+# docker
+Dockerfile
+docker-compose.yml
+.dockerignore
