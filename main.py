@@ -1,8 +1,8 @@
-# complete workflow example: end-to-end trading strategy research
+# complete workflow example: end-to-end crypto trading strategy research
 # demonstrates workflow from data loading to backtesting to visualization
 # typical quant trading workflow
 
-from data import quick_load, create_features, split_train_test
+from data import fetch_crypto, create_features, split_train_test
 from strategies import MovingAverageCrossover
 from backtester import Backtester, quick_backtest
 from metrics import calculate_all_metrics
@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 def complete_workflow():
     # complete workflow: data -> strategy -> backtest -> visualize
     print("=" * 70)
-    print(" complete trading strategy research workflow")
+    print(" complete crypto trading strategy research workflow")
     print("=" * 70)
     print()
 
@@ -25,14 +25,14 @@ def complete_workflow():
     print("step 1: data acquisition")
     print("-" * 70)
 
-    symbol = 'AAPL'
-    start_date = '2020-01-01'
+    symbol = 'BTC/USDT'
+    start_date = '2023-01-01'
     end_date = '2023-12-31'
 
     print(f"loading {symbol} data from {start_date} to {end_date}...")
-    data = quick_load(symbol, start_date=start_date, end_date=end_date)
+    data = fetch_crypto(symbol, start_date=start_date, end_date=end_date)
 
-    print(f"loaded {len(data)} days of data")
+    print(f"loaded {len(data)} candles of data")
     print(f"  date range: {data.index[0].date()} to {data.index[-1].date()}")
     print(f"  price range: ${data['close'].min():.2f} - ${data['close'].max():.2f}")
     print()
@@ -72,7 +72,7 @@ def complete_workflow():
     print("step 4: train/test split")
     print("-" * 70)
 
-    train_data, test_data = split_train_test(data, test_size=0.2, shuffle=False)
+    train_data, test_data = split_train_test(data, test_size=0.2)
 
     print(f"training set: {len(train_data)} days ({train_data.index[0].date()} to {train_data.index[-1].date()})")
     print(f"test set:     {len(test_data)} days ({test_data.index[0].date()} to {test_data.index[-1].date()})")

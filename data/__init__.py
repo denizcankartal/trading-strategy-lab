@@ -1,8 +1,7 @@
-# data module for fetching, loading, and preprocessing market data
+# data module for fetching and preprocessing crypto market data
 
 from .base import DataProvider
-from .providers import YahooFinanceProvider, CSVDataProvider
-from .loaders import DataLoader, quick_load
+from .providers import BinanceProvider, fetch_crypto
 from .preprocessing import (
     handle_missing_data,
     remove_outliers,
@@ -17,16 +16,12 @@ from .preprocessing import (
 )
 
 __all__ = [
-    # base classes
+    # base
     'DataProvider',
 
     # providers
-    'YahooFinanceProvider',
-    'CSVDataProvider',
-
-    # loaders
-    'DataLoader',
-    'quick_load',
+    'BinanceProvider',
+    'fetch_crypto',
 
     # preprocessing
     'handle_missing_data',

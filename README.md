@@ -106,20 +106,33 @@ cache stored in `.data_cache/` directory
 
 **compare to benchmark**: beating buy-and-hold is hard
 
-## todo
-- short selling support
-- multiple positions
-- risk management (stop loss, position sizing rules)
-- more strategies (mean reversion, momentum, pairs)
-- intraday data support
-- unit tests
+## testing
+
+run tests to verify everything works:
+
+```bash
+docker compose build
+
+# all tests
+docker compose run --rm trading-research pytest
+
+# just unit tests (fast)
+docker compose run --rm trading-research pytest tests/unit
+
+# skip slow tests
+docker compose run --rm trading-research pytest -m "not slow"
+```
+
+tests cover:
+- data fetching from binance
+- preprocessing functions (zeros, nans, inf)
+- temporal order in train/test split
+- complete workflows end-to-end
 
 ## troubleshooting
 
-**"no data retrieved"**: check symbol is valid and dates are reasonable
+**"no data retrieved"**: check symbol format (BTC/USDT not BTCUSDT)
 
 **"insufficient cash"**: reduce position_size_pct or increase initial_capital
 
 **poor performance**: add transaction costs (commission_pct, slippage_pct)
-
-**cache issues**: delete `.data_cache/` directory to refresh data

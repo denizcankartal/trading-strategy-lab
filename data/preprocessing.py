@@ -2,7 +2,6 @@
 
 import pandas as pd
 import numpy as np
-from typing import Optional
 
 def handle_missing_data(
     data: pd.DataFrame,
@@ -66,7 +65,10 @@ def add_log_returns(
 
     for period in periods:
         col_name = f'log_returns_{period}d' if period != 1 else 'log_returns'
-        data[col_name] = np.log(data['close'] / data['close'].shift(period))
+        price_ratio = data['close'] / data['close'].shift(period)
+        # replace 0, inf, -inf with nan to avoid log(0) and division by zero
+        price_ratio = price_ratio.replace([0, np.inf, -np.inf], np.nan)
+        data[col_name] = np.log(price_ratio)
 
     return data
 
@@ -75,7 +77,8 @@ def normalize_volume(data: pd.DataFrame) -> pd.DataFrame:
     # normalize volume using 20-day rolling average
     data = data.copy()
     avg_volume = data['volume'].rolling(window=20).mean()
-    data['normalized_volume'] = data['volume'] / avg_volume
+    # replace 0 with nan to avoid division by zero
+    data['normalized_volume'] = data['volume'] / avg_volume.replace(0, np.nan)
 
     return data
 
@@ -140,13 +143,10 @@ def align_data(
 
 def split_train_test(
     data: pd.DataFrame,
-    test_size: float = 0.2,
-    shuffle: bool = False
+    test_size: float = 0.2
 ) -> tuple:
-    # split data into train and test sets
-    if shuffle:
-        data = data.sample(frac=1.0)
-
+    # split time series data maintaining temporal order
+    # train on earlier data, test on later data
     split_idx = int(len(data) * (1 - test_size))
     train = data.iloc[:split_idx]
     test = data.iloc[split_idx:]

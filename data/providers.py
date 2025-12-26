@@ -1,136 +1,98 @@
-# data providers for fetching market data
+# data providers for fetching crypto market data
 
 from typing import Optional
 import pandas as pd
-import yfinance as yf
+import ccxt
 from .base import DataProvider
 
-class YahooFinanceProvider(DataProvider):
-    # yahoo finance data provider
+
+class BinanceProvider(DataProvider):
+    # binance crypto data provider using ccxt
 
     def __init__(self):
-        # initialize yahoo finance provider
-        super().__init__(name="Yahoo Finance")
+        super().__init__(name="Binance")
+        self.exchange = ccxt.binance({
+            'enableRateLimit': True,
+            'options': {'defaultType': 'spot'}
+        })
 
     def fetch(
         self,
         symbol: str,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
-        interval: str = '1d'
+        timeframe: str = '1d'
     ) -> pd.DataFrame:
-        # fetch historical market data from yahoo finance
+        # fetch ohlcv data from binance
+        # symbol: trading pair like 'BTC/USDT'
+        # start_date: start date 'yyyy-mm-dd'
+        # end_date: end date 'yyyy-mm-dd'
+        # timeframe: '1m', '5m', '15m', '1h', '4h', '1d', '1w'
+        # returns: dataframe with ohlcv columns and datetime index
+
         try:
-            ticker = yf.Ticker(symbol)
-            data = ticker.history(
-                start=start_date,
-                end=end_date,
-                interval=interval,
-                auto_adjust=True
-            )
-
-            if data.empty:
-                raise ValueError(
-                    f"no data retrieved for symbol '{symbol}', "
-                    f"check if symbol is valid"
-                )
-
-            data.columns = data.columns.str.lower()
-            required_columns = ['open', 'high', 'low', 'close', 'volume']
-            data = data[required_columns]
-
-            if not self.validate_data(data):
-                raise ValueError(
-                    f"Data validation failed for symbol '{symbol}'"
-                )
-
-            return data
-
-        except Exception as e:
-            raise ValueError(
-                f"failed to fetch data for '{symbol}' from yahoo finance: {str(e)}"
-            )
-
-    def fetch_multiple(
-        self,
-        symbols: list,
-        start_date: Optional[str] = None,
-        end_date: Optional[str] = None,
-        interval: str = '1d'
-    ) -> dict:
-        # fetch data for multiple symbols
-        results = {}
-
-        for symbol in symbols:
-            try:
-                data = self.fetch(symbol, start_date, end_date, interval)
-                results[symbol] = data
-            except ValueError as e:
-                print(f"warning: could not fetch {symbol}: {str(e)}")
-                results[symbol] = None
-
-        return results
-
-    def get_info(self, symbol: str) -> dict:
-        # get company info for symbol
-        try:
-            ticker = yf.Ticker(symbol)
-            return ticker.info
-        except Exception as e:
-            raise ValueError(f"failed to get info for '{symbol}': {str(e)}")
-
-
-class CSVDataProvider(DataProvider):
-    # csv data provider for loading from files
-
-    def __init__(self):
-        # initialize csv data provider
-        super().__init__(name="CSV File")
-
-    def fetch(
-        self,
-        symbol: str,
-        start_date: Optional[str] = None,
-        end_date: Optional[str] = None,
-        interval: str = '1d'
-    ) -> pd.DataFrame:
-        # load historical data from csv file
-        try:
-            data = pd.read_csv(symbol)
-
-            required_columns = ['date', 'open', 'high', 'low', 'close', 'volume']
-            missing_columns = [col for col in required_columns if col not in data.columns.str.lower()]
-
-            if missing_columns:
-                raise ValueError(
-                    f"csv file missing required columns: {missing_columns}, "
-                    f"required: {required_columns}"
-                )
-
-            data.columns = data.columns.str.lower()
-            data['date'] = pd.to_datetime(data['date'])
-            data.set_index('date', inplace=True)
-            data.sort_index(inplace=True)
-
+            # convert dates to timestamps if provided
+            since = None
             if start_date:
-                data = data[data.index >= pd.to_datetime(start_date)]
+                since = self.exchange.parse8601(f"{start_date}T00:00:00Z")
+
+            # fetch ohlcv data
+            ohlcv = self.exchange.fetch_ohlcv(
+                symbol,
+                timeframe=timeframe,
+                since=since,
+                limit=1000  # max per request
+            )
+
+            if not ohlcv:
+                raise ValueError(f"no data retrieved for {symbol}")
+
+            # convert to dataframe
+            data = pd.DataFrame(
+                ohlcv,
+                columns=['timestamp', 'open', 'high', 'low', 'close', 'volume']
+            )
+
+            # convert timestamp to datetime
+            data['timestamp'] = pd.to_datetime(data['timestamp'], unit='ms')
+            data.set_index('timestamp', inplace=True)
+            data.index.name = 'date'
+
+            # filter by end date if provided
             if end_date:
-                data = data[data.index <= pd.to_datetime(end_date)]
+                end_ts = pd.Timestamp(end_date)
+                data = data[data.index <= end_ts]
 
-            data = data[['open', 'high', 'low', 'close', 'volume']]
-
+            # validate
             if not self.validate_data(data):
-                raise ValueError("data validation failed")
-
-            if data.empty:
-                raise ValueError(
-                    f"no data available for specified date range, "
-                    f"start: {start_date}, end: {end_date}"
-                )
+                raise ValueError(f"data validation failed for {symbol}")
 
             return data
 
-        except FileNotFoundError:
-            raise ValueError(f"csv file not found: {symbol}")
+        except ccxt.NetworkError as e:
+            raise ValueError(f"network error fetching {symbol}: {str(e)}")
+        except ccxt.ExchangeError as e:
+            raise ValueError(f"exchange error fetching {symbol}: {str(e)}")
         except Exception as e:
-            raise ValueError(f"failed to load csv file '{symbol}': {str(e)}")
+            raise ValueError(f"failed to fetch {symbol}: {str(e)}")
+
+    def get_available_symbols(self) -> list:
+        # get list of available trading pairs
+        try:
+            markets = self.exchange.load_markets()
+            return [symbol for symbol in markets.keys() if '/USDT' in symbol]
+        except Exception as e:
+            raise ValueError(f"failed to get symbols: {str(e)}")
+
+
+# convenience function for quick data fetching
+def fetch_crypto(
+    symbol: str,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    timeframe: str = '1d'
+) -> pd.DataFrame:
+    # fetch crypto data from binance
+    # simple wrapper for quick usage
+    provider = BinanceProvider()
+    return provider.fetch(symbol, start_date, end_date, timeframe)
