@@ -211,9 +211,9 @@ def quick_backtest(
     end_date: Optional[str] = None,
     initial_capital: float = 100000
 ) -> BacktestResult:
-    from data import quick_load
+    from data import fetch_crypto
 
-    data = quick_load(symbol, start_date=start_date, end_date=end_date)
+    data = fetch_crypto(symbol, start_date=start_date, end_date=end_date)
     backtester = Backtester(initial_capital=initial_capital)
     result = backtester.run(strategy, data, symbol)
 

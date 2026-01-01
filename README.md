@@ -1,7 +1,7 @@
 ## trading strategy research
 framework for developing and backtesting trading strategies
 
-1. load or fetch market data with caching
+1. fetch market data
 2. add features
 3. create strategy
 4. split train/test
@@ -24,7 +24,7 @@ docker compose logs -f
 
 ## modules
 
-* data - fetch and cache market data
+* data - fetch market data
 * strategies - create trading strategies by inheriting from base class
 * backtester - execute strategies with realistic market conditions such as:
     - commission and slippage modeling
@@ -80,23 +80,7 @@ results = backtester.walk_forward_analysis(
 
 this gives multiple out-of-sample test results to validate robustness
 
-### data caching
-
-automatically caches downloaded data to avoid repeated api calls:
-
-```python
-# first call: downloads from yahoo finance
-data = quick_load('AAPL', start_date='2020-01-01')
-
-# second call: loads from cache (instant)
-data = quick_load('AAPL', start_date='2020-01-01')
-```
-
-cache stored in `.data_cache/` directory
-
 ## performance tips
-
-**use caching**: data caching speeds up iterations significantly
 
 **start simple**: test basic strategies before complex ones
 
@@ -105,29 +89,6 @@ cache stored in `.data_cache/` directory
 **check transaction costs**: many strategies look good until you add realistic costs
 
 **compare to benchmark**: beating buy-and-hold is hard
-
-## testing
-
-run tests to verify everything works:
-
-```bash
-docker compose build
-
-# all tests
-docker compose run --rm trading-research pytest
-
-# just unit tests (fast)
-docker compose run --rm trading-research pytest tests/unit
-
-# skip slow tests
-docker compose run --rm trading-research pytest -m "not slow"
-```
-
-tests cover:
-- data fetching from binance
-- preprocessing functions (zeros, nans, inf)
-- temporal order in train/test split
-- complete workflows end-to-end
 
 ## troubleshooting
 

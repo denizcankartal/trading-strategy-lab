@@ -176,19 +176,11 @@ def complete_workflow():
     print(f"saved: {dashboard_file}")
     plt.close(fig)
 
-    # create equity curve with benchmark
-    print("generating equity curve comparison...")
-    spy_data = quick_load('SPY', start_date=start_date, end_date=end_date)
-    spy_returns = spy_data['close'].pct_change().dropna()
-
-    # align returns
-    aligned_returns = returns.reindex(spy_returns.index).dropna()
-    aligned_spy = spy_returns.reindex(returns.index).dropna()
-
+    # create equity curve
+    print("generating equity curve...")
     fig = plot_equity_curve(
-        returns=aligned_returns,
-        benchmark_returns=aligned_spy,
-        title=f"{symbol} - {strategy.name} vs spy benchmark"
+        returns=returns,
+        title=f"{symbol} - {strategy.name} - equity curve"
     )
 
     equity_file = 'complete_workflow_equity.png'

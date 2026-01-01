@@ -9,10 +9,6 @@ venv/
 ENV/
 *.egg-info/
 
-# data cache
-.data_cache/
-*.pkl
-
 # ide
 .vscode/
 .idea/

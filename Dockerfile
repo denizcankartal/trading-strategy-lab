@@ -14,8 +14,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN mkdir -p .data_cache
-
 ENV PYTHONPATH=/app
 
 CMD ["python3"]
